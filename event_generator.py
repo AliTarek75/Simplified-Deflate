@@ -22,3 +22,49 @@ DISTANCE_EXTRA = [
     0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
     7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13
 ]
+
+def generate_event_stream(tokens):
+    output = []
+
+    for token in tokens:
+        if isinstance(token, tuple):
+            length = token[0]
+            distance = token[1]
+            temp = []
+
+            # Length Processing by going backwards
+            # This avoids the off by one and going out of bounds issues
+            i = len(LENGTH_BASE) - 1
+            while length < LENGTH_BASE[i]:
+                i -= 1
+
+            temp.append(257+i)
+            num = length - LENGTH_BASE[i]
+            extra = LENGTH_EXTRA[i]
+
+            # append the correct string and an empty string if extra bit length is 0
+            binary_str = format(num, f'0{extra}b') if extra != 0 else ""
+            temp.append(binary_str)
+        
+            # Distance Processing by going backwards
+            i = len(DISTANCE_BASE) - 1
+            while distance < DISTANCE_BASE[i]:
+                i -= 1
+
+            temp.append(i)
+            num = distance - DISTANCE_BASE[i]
+            extra = DISTANCE_EXTRA[i]
+
+            # append the correct string and an empty string if extra bit length is 0
+            binary_str = format(num, f'0{extra}b') if extra != 0 else ""
+            temp.append(binary_str)
+
+            output.append(tuple(temp))
+                
+        else:
+            output.append(token)
+
+    # End Event
+    output.append(256)
+
+    return output
