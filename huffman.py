@@ -71,7 +71,7 @@ def canonical_codes(lengths):
         next_code[bits] = code
 
     symbol_code = {}
-    
+
     for symbol in sorted(lengths.keys()):
         length = lengths[symbol]
         if length != 0:
@@ -80,6 +80,47 @@ def canonical_codes(lengths):
 
     return symbol_code
 
+def pipeline(stage2):
+    lit,dist = convert(stage2)
+    lit_freq=createfreq(lit)
+    dist_freq=createfreq(dist)
+    lit_tree=huffman(lit_freq)
+    dist_tree=huffman(dist_freq)
+    lit_len=get_lengths(lit_tree)
+    dist_len=get_lengths(dist_tree)
+    lit_codes=canonical_codes(lit_len)
+    dist_codes=canonical_codes(dist_len)
+    bits = []
+    
+    for token in stage2:
+        if type(token) is tuple:
+            len_sym, len_extra, dist_sym, dist_extra = token
+            code, length = lit_codes[len_sym]
+            bits.append(format(code, f'0{length}b'))
+
+            if len_extra:
+                bits.append(len_extra)
+
+            code, length = dist_codes[dist_sym]
+            bits.append(format(code, f'0{length}b'))
+
+            if dist_extra:
+                bits.append(dist_extra)
+        
+        else:
+            code, length = lit_codes[token]
+            bits.append(format(code, f'0{length}b'))
+
+    bitstream = ''.join(bits)
+    remainder = len(bitstream) % 8
+    if remainder != 0:
+        bitstream += '0' * (8 - remainder)
+    # convert to bytes
+    payload = bytearray()
+    for i in range(0, len(bitstream), 8):
+        payload.append(int(bitstream[i:i+8], 2))
+    
+    return payload,lit_codes,dist_codes
 
 
 
