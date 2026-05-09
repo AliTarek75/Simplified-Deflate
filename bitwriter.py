@@ -1,8 +1,14 @@
 import math
+from huffman import pipeline 
+from event_generator import generate_event_stream
+from lz77 import tokenProducer
 
 # Create the header in one long string and combine it with payload from stage3
-def createHeader(stage2):
-    payload,lit_codes, dist_codes = pipeline(stage2)
+def compress(data):
+
+    lz77_tokens = tokenProducer(data)
+    events = generate_event_stream(lz77_tokens)
+    payload, lit_codes, dist_codes = pipeline(events)
 
     LIT_BW, DIST_BW = calculateBW(lit_codes,dist_codes)
     litBits = litPadding(LIT_BW, lit_codes)
