@@ -4,12 +4,12 @@ from event_generator import LENGTH_BASE, LENGTH_EXTRA, DISTANCE_BASE, DISTANCE_E
 # The data variable in any function here is assumed to takes a single string of bits
 # Any other form will not work
 
-# Interprets the integer between start and end in the bit string
+# interpret the integer between start and end in the bit string
 def read_int(data, start, end):
     return int(data[start : end], 2)
 
-# Finds a valid code from the code list (keys) from start in the bit string
-# Returns both the key and the length
+# find valid code from the code list (keys) from start in the bit string
+# returns both the key and the length
 def decode_symbol(data, start, keys):
     for i in range(1, 17):
         key = data[start : start+i]
@@ -18,9 +18,9 @@ def decode_symbol(data, start, keys):
         
     raise ValueError(f"No valid Huffman code found at index {start}.")
 
-# Calculates the huffman cannonical codes but inverts the order of the dict
-# Original dict was int(symbol) -> (int(code), int(length))
-# Invert is string(final calculated code) -> int(symbol) 
+# calculates the huffman cannonical codes but inverts the order of the dict
+# original dict was int(symbol) -> (int(code), int(length))
+# invert is string(final calculated code) -> int(symbol) 
 def canonical_invert(lengths):
     codes = canonical_codes(lengths)
     result = {}
@@ -77,13 +77,13 @@ def decompress(data):
         # other than that we reached the end and we break
         if literal > 256:
 
-            # Calculates the length of the extra bits (0, 1, 2...) 
-            # Then slices the data to get the exact bit string for the extra bits
+            # calculates the length of the extra bits (0, 1, 2...) 
+            # then slices the data to get the exact bit string for the extra bits
             extra_length = LENGTH_EXTRA[literal-257]
             extra = data[idx : idx+extra_length]
 
-            # Calculates the actual length for the match
-            # We get the starting point then add the extra bits if it's not an empty string 
+            # calculates the actual length for the match
+            # we get the starting point then add the extra bits if it's not an empty string 
             # doing int() on an empty string gives an error
             length = LENGTH_BASE[literal-257] + (int(extra, 2) if extra else 0)
 

@@ -1,27 +1,33 @@
 from queue import PriorityQueue
+
+# Tree node class
 class node:
     def __init__(self,freq,left=None,right=None,element=None):
         self.freq=freq
         self.right=right
         self.left=left 
         self.element=element
+
     #returns a merged node
     @classmethod
     def merge(cls,n1,n2):
         return cls((n1.freq+n2.freq),n1,n2)
-# splits the 2nd stage output to distance symbols and lit/len symbols
+    
+# Splits the 2nd stage output to two lists of distance symbols and lit/len symbols for easier processing later
+# returns both the lists
 def convert(stage2_output):
     lit_symbols = []
     dist_symbols = []
 
     for token in stage2_output:
+        # If token is a tuple then it's a match
         if type(token) is tuple:
             len_sym, len_extra, dist_sym, dist_extra = token
             lit_symbols.append(len_sym)
             dist_symbols.append(dist_sym)
         else:
             lit_symbols.append(token)  
-
+    
     return lit_symbols, dist_symbols
 
 # create and outputs a dictionary containing every symbol as key and frequency as value
@@ -33,27 +39,28 @@ def createfreq(list):
             frequency_table[i]+=1
         else:
             frequency_table[i]=1
-    # sorts with respect to values(its actually unneeded bec the priority queue handles it)
-    frequency_table = dict(sorted(frequency_table.items(), key=lambda item: item[1], reverse=True))
 
     return frequency_table
 
-# takes the frequency dictionary and outputs the root of the huffman tree
+# takes the frequency dictionary and outputs the root node of the huffman tree
 def huffman(frequency):
-    queue=PriorityQueue()
+    queue = PriorityQueue()
     for key in frequency:
 
-        n=node(freq=frequency[key],element=key)
-        # inserts based on frequency as key and symbol in case of a tie
-        queue.put((n.freq,key,n))
-    while queue.qsize()>1:
-        #pops 2 nodes merges them then puts them back in again
-        n1_freq,s1, n1_node = queue.get()
-        n2_freq,s2, n2_node = queue.get()
-        merged=node.merge(n1_node,n2_node)
-        queue.put((merged.freq,min(s1,s2),merged))
+        n = node(freq=frequency[key], element=key)
+        # Inserts based on frequency as key and symbol in case of a tie
+        queue.put((n.freq, key, n))
+
+    while queue.qsize() > 1:
+        # Pops 2 nodes merges them then puts them back in again
+        n1_freq, s1, n1_node = queue.get()
+        n2_freq, s2, n2_node = queue.get()
+        merged = node.merge(n1_node, n2_node)
+        queue.put((merged.freq, min(s1,s2), merged))
+        
     return queue.get()
-# takes the root of a tree and outputs a  dictionary containing each symbol as key and its code lenght as value
+
+# takes the root of a tree and returns a dictionary int(symbol) -> int(length)
 def get_lengths(node, depth=0, lengths=None):
     if lengths is None:
         lengths={}
@@ -65,8 +72,9 @@ def get_lengths(node, depth=0, lengths=None):
         if node.right:
             get_lengths(node.right, depth+1, lengths)
     return lengths
-"""takes the lenghts dictionary and outputs a dictionary containing the symbol as key and a 
- tuple containing its code and code lenght lenght respectiveely as value(its mostly copy pasted from the pdf with very few modifications)"""
+
+# Takes the lenghts dictionary and returns a dictionary int(symbol) -> (int(code), int(length))
+# its mostly copy pasted from the pdf with very few modifications
 def canonical_codes(lengths):
  
     count = [0] * 16
@@ -90,55 +98,53 @@ def canonical_codes(lengths):
             next_code[length] += 1
 
     return symbol_code
-# the main function applying all of the pipeline returning the payload and the output of the canoniccal codes function for both lit/len and dist respecctively
-#the input is stage 2 output
+
+# the main function applying all of the pipeline 
+# returns the payload and the output of the canoniccal codes function for both lit/len and dist respecctively
+# the input is stage 2 output
 def pipeline(stage2):
+
+    # Initilization steps
     lit,dist = convert(stage2)
-    lit_freq=createfreq(lit)
-    dist_freq=createfreq(dist)
-    lit_tree=huffman(lit_freq)
-    dist_tree=huffman(dist_freq)
-    lit_len=get_lengths(lit_tree)
-    dist_len=get_lengths(dist_tree)
-    lit_codes=canonical_codes(lit_len)
-    dist_codes=canonical_codes(dist_len)
-    #payload generation
+    
+    lit_tree = huffman(createfreq(lit))
+    dist_tree = huffman(createfreq(dist))
+
+    lit_codes = canonical_codes(get_lengths(lit_tree))
+    dist_codes = canonical_codes(get_lengths(dist_tree))
+
+    # Payload generation
     bits = []
     for token in stage2:
+        # If token is a tuple then it's a match
         if type(token) is tuple:
             len_sym, len_extra, dist_sym, dist_extra = token
             code, length = lit_codes[len_sym]
-            # format is to to limit the code to its length
+
+            # format is used to create the actual prefix-free code from its value and length
             bits.append(format(code, f'0{length}b'))
 
-            if len_extra:
-                bits.append(len_extra)
+            bits.append(len_extra)
 
             code, length = dist_codes[dist_sym]
             bits.append(format(code, f'0{length}b'))
 
-            if dist_extra:
-                bits.append(dist_extra)
+            bits.append(dist_extra)
         
         else:
             code, length = lit_codes[token]
             bits.append(format(code, f'0{length}b'))
 
     bitstream = ''.join(bits)
-    #zero padding for lastbyte
+
+    # Zero padding for last byte
     remainder = len(bitstream) % 8
     if remainder != 0:
         bitstream += '0' * (8 - remainder)
-    # convert to bytes
+
+    # Convertion to bytes
     payload = bytearray()
     for i in range(0, len(bitstream), 8):
         payload.append(int(bitstream[i:i+8], 2))
     
     return payload,lit_codes,dist_codes
-
-
-
-
-
-
-
