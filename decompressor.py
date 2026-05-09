@@ -15,6 +15,8 @@ def decode_symbol(data, start, keys):
         key = data[start : start+i]
         if key in keys:
             return key, i
+        
+    raise ValueError(f"No valid Huffman code found at index {start}.")
 
 # Calculates the huffman cannonical codes but inverts the order of the dict
 # Original dict was int(symbol) -> (int(code), int(length))
@@ -24,5 +26,90 @@ def canonical_invert(lengths):
     result = {}
     for symbol, (code, length) in codes.items():
         result[format(code, f'0{length}b')] = symbol
+
+    return result
+
+# The decompresser function, uses a main index (idx) 
+# that gets updated throughout the function to read the bit string (data)
+def decompress(data):
+    idx = 0
+
+    # 1. Reading the header
+
+    # Reads the Bit widths for both literals and distances
+    LIT_BW = read_int(data, idx, idx+4)
+    idx += 4
+    DIST_BW = read_int(data, idx, idx+4)
+    idx += 4
+
+
+    lit_len = []
+    dist_len = []
+
+    # Reads the huffman lengths from the next two tables
+    for _ in range(286):
+        length = read_int(data, idx, idx + LIT_BW)
+        lit_len.append(length)
+        idx += LIT_BW  
+
+    for _ in range(30):
+        length = read_int(data, idx, idx + DIST_BW)
+        dist_len.append(length)
+        idx += DIST_BW
+
+    # Calculates the cannonical codes
+    lit_codes = canonical_invert(dict(enumerate(lit_len)))
+    dist_codes = canonical_invert(dict(enumerate(dist_len)))
+
+    # This will hold the final decompressed result 
+    result = bytearray()
+
+    # 2. Reading the payload
+    while True:
+
+        # Decodes a literal event symbol
+        lit_key, i = decode_symbol(data, idx, lit_codes)
+        literal = lit_codes[lit_key]
+
+        idx += i
+
+        # If literal is >256 it's a match, if <256 it's a normal literal 
+        # other than that we reached the end and we break
+        if literal > 256:
+
+            # Calculates the length of the extra bits (0, 1, 2...) 
+            # Then slices the data to get the exact bit string for the extra bits
+            extra_length = LENGTH_EXTRA[literal-257]
+            extra = data[idx : idx+extra_length]
+
+            # Calculates the actual length for the match
+            # We get the starting point then add the extra bits if it's not an empty string 
+            # doing int() on an empty string gives an error
+            length = LENGTH_BASE[literal-257] + (int(extra, 2) if extra else 0)
+
+            idx += extra_length
+
+            # Decodes a distance event symbol 
+            dist_key, i = decode_symbol(data, idx, dist_codes)
+            dist_value = dist_codes[dist_key]
+
+            idx += i
+
+            # Calculates the actual distance for the match
+            extra_length = DISTANCE_EXTRA[dist_value]
+            extra = data[idx : idx+extra_length]
+            distance = DISTANCE_BASE[dist_value] + (int(extra, 2) if extra else 0)
+        
+            idx += extra_length
+            
+            # Decodes the match from length and distance that we calculated
+            # We keep copying from distance away and append length times
+            for _ in range(length):
+                result.append(result[-distance])
+
+        elif literal < 256:
+            result.append(literal)
+        else:
+            break
 
     return result
