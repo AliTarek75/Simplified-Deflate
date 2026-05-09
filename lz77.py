@@ -54,11 +54,12 @@ def tokenProducer(data):
                 i += length
             # If match is less than min_match then append literal
             else:
+                table.setdefault(current, []).append(i)
                 tokens.append(data[i])
                 i+=1
 
         else:
-            table[current] = [i]
+            table.setdefault(current, []).append(i)
             tokens.append(data[i])
             i+=1
 

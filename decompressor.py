@@ -11,7 +11,7 @@ def read_int(data, start, end):
 # find valid code from the code list (keys) from start in the bit string
 # returns both the key and the length
 def decode_symbol(data, start, keys):
-    for i in range(1, 17):
+    for i in range(1, 300):
         key = data[start : start+i]
         if key in keys:
             return key, i
@@ -63,6 +63,9 @@ def decompress(data):
 
     # This will hold the final decompressed result 
     result = bytearray()
+    
+    # Skip the rest of the header extra padding
+    idx = (idx + 7) // 8 * 8
 
     # 2. Reading the payload
     while True:

@@ -58,7 +58,7 @@ def huffman(frequency):
         merged = node.merge(n1_node, n2_node)
         queue.put((merged.freq, min(s1,s2), merged))
         
-    return queue.get()
+    return queue.get()[2]
 
 # takes the root of a tree and returns a dictionary int(symbol) -> int(length)
 def get_lengths(node, depth=0, lengths=None):
@@ -76,16 +76,19 @@ def get_lengths(node, depth=0, lengths=None):
 # Takes the lenghts dictionary and returns a dictionary int(symbol) -> (int(code), int(length))
 # its mostly copy pasted from the pdf with very few modifications
 def canonical_codes(lengths):
- 
-    count = [0] * 16
+    # Find the real max depth of your specific tree
+    max_bits = max(lengths.values()) if lengths else 0
+    
+    # Initialize arrays to fit the actual max depth
+    count = [0] * (max_bits + 1)
     for length in lengths.values():
         count[length] += 1
     count[0] = 0 
 
-    next_code = [0] * 16
+    next_code = [0] * (max_bits + 1)
     code = 0
 
-    for bits in range(1, 16):
+    for bits in range(1, max_bits + 1):
         code = (code + count[bits - 1]) << 1
         next_code[bits] = code
 
@@ -108,10 +111,13 @@ def pipeline(stage2):
     lit,dist = convert(stage2)
     
     lit_tree = huffman(createfreq(lit))
-    dist_tree = huffman(createfreq(dist))
-
     lit_codes = canonical_codes(get_lengths(lit_tree))
-    dist_codes = canonical_codes(get_lengths(dist_tree))
+
+    if dist:
+        dist_tree = huffman(createfreq(dist))
+        dist_codes = canonical_codes(get_lengths(dist_tree))
+    else:
+        dist_codes = {}
 
     # Payload generation
     bits = []

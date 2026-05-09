@@ -30,19 +30,19 @@ def compress(data):
 
 # Calculate minimum number of bits needed to represent maximum length/distance codes in binary
 def calculateBW(lit_codes,dist_codes):
+
     # Find maximum code length from literal/distance dictionary
-    max_length = max(length for code,length in lit_codes.values())
-    max_distance = max(length for code,length in dist_codes.values())
+    # Default=1 means it returns 1 if the list was empty
+    max_length = max((length for code, length in lit_codes.values()), default=1)
+    max_distance = max((length for code, length in dist_codes.values()), default=1)
 
     LIT_BW = 0
     DIST_BW = 0
 
     # Calculate the number of bits required by the following formula: ⌊log2(M)⌋ + 1
-    if (max_length > 0):
-        LIT_BW = math.floor(math.log2(max_length))+1
-
-    if (max_distance > 0):
-        DIST_BW = math.floor(math.log2(max_distance))+1
+    # It will default to 1 if the list was empty since max_length and max_distance defaults to 1
+    LIT_BW = math.floor(math.log2(max_length))+1
+    DIST_BW = math.floor(math.log2(max_distance))+1
 
     return LIT_BW, DIST_BW
 
