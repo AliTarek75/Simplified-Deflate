@@ -54,7 +54,7 @@ def main():
         # Calculate the original and new file sizes and the percentage
         original_size = len(data)
         compressed_size = len(compressed_data)
-        diff = abs(original_size - compressed_size)
+        diff = original_size - compressed_size
         percentage = (diff / original_size) * 100   
             
         with open(args.filename + ".sdfl", "wb") as file:
@@ -71,7 +71,7 @@ def main():
         if diff > 0:
             print(f"Result: \t Shrunk by {percentage:.2f}%")
         elif diff < 0:
-            print(f"Result: \t Expanded by {percentage:.2f}% (Inefficient)")
+            print(f"Result: \t Expanded by {abs(percentage):.2f}% (Inefficient)")
         else:
             print(f"Result: \t No change in file size")
     
