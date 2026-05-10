@@ -44,6 +44,14 @@ def createfreq(list):
 
 # takes the frequency dictionary and outputs the root node of the huffman tree
 def huffman(frequency):
+
+    # Handle the single symbol edge case, because this will skip the queue and give the symbol 0 length
+    if len(frequency) == 1:
+        symbol = list(frequency.keys())[0]
+
+        # Create a root node that points to the symbol node, This ensures the symbol has a length of 1
+        return node(freq=frequency[symbol], left=node(freq=frequency[symbol], element=symbol))
+    
     queue = PriorityQueue()
     for key in frequency:
 
@@ -76,7 +84,7 @@ def get_lengths(node, depth=0, lengths=None):
 # Takes the lenghts dictionary and returns a dictionary int(symbol) -> (int(code), int(length))
 # its mostly copy pasted from the pdf with very few modifications
 def canonical_codes(lengths):
-    # Find the real max depth of your specific tree
+    # Find the max depth of the tree
     max_bits = max(lengths.values()) if lengths else 0
     
     # Initialize arrays to fit the actual max depth

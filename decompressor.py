@@ -42,7 +42,6 @@ def decompress(data):
     DIST_BW = read_int(data, idx, idx+4)
     idx += 4
 
-
     lit_len = []
     dist_len = []
 
@@ -65,7 +64,8 @@ def decompress(data):
     result = bytearray()
     
     # Skip the rest of the header extra padding
-    idx = (idx + 7) // 8 * 8
+    if idx % 8 != 0:
+        idx += (8 - idx % 8)
 
     # 2. Reading the payload
     while True:

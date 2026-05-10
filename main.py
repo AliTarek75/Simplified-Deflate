@@ -55,7 +55,7 @@ def main():
         original_size = len(data)
         compressed_size = len(compressed_data)
         diff = original_size - compressed_size
-        percentage = (diff / original_size) * 100   
+        percentage = (diff / original_size) * 100 if original_size > 0 else -1
             
         with open(args.filename + ".sdfl", "wb") as file:
             file.write(compressed_data)
@@ -68,13 +68,16 @@ def main():
         
         # Based on the difference, if the difference is negative that means the file got expanded instead of compress
         # this mostly happens with already compressed files or very small files 
-        if diff > 0:
-            print(f"Result: \t Shrunk by {percentage:.2f}%")
-        elif diff < 0:
-            print(f"Result: \t Expanded by {abs(percentage):.2f}% (Inefficient)")
+        
+        if original_size:
+            if diff > 0:
+                print(f"Result: \t Shrunk by {percentage:.2f}%")
+            elif diff < 0:
+                print(f"Result: \t Expanded by {abs(percentage):.2f}% (Inefficient)")
+            elif original_size == 0:
+                print(f"Result: \t No change in file size")
         else:
-            print(f"Result: \t No change in file size")
-    
+            print(f"Result: \t Expanded. Original file was empty")
     # User didn't give either flags
     else:
         parser.error("You must use either -c to compress or -d to decompress.")
